@@ -1,19 +1,104 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Crowd Monitoring Dashboard</title>
+    <title>Live Crowd Monitoring</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: white; margin: 0; padding: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: #2d2d2d; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .video-feed { width: 100%; border-radius: 8px; border: 2px solid #444; }
+        .stat-val { font-size: 24px; color: #00ff88; font-weight: bold; }
+        .secondary-stats { display: flex; justify-content: space-around; margin-top: 15px; border-top: 1px solid #444; padding-top: 15px; font-size: 0.9em; color: #aaa; }
+        #chart-container { position: relative; height: 300px; width: 100%; }
+    </style>
 </head>
 <body>
-    <h1>Crowd Analysis Dashboard</h1>
+    <h1>Real-Time Crowd Analysis Dashboard</h1>
 
-    <h2>Maximum Crowd: {{ max_people }}</h2>
-    <h2>Average Crowd: {{ avg_people }}</h2>
-    <h2>Minimum Crowd: {{ min_people }}</h2>
-    <h2>Total Frames: {{ total_frames }}</h2>
-    <h2>Peak Frame: {{ peak_frame }}</h2>
+    <div class="grid">
+        <div class="card">
+            <h2>Live CCTV Feed</h2>
+            <img src="{{ url_for('video_feed') }}" class="video-feed">
+        </div>
 
-    <h2>Crowd Density Graph</h2>
-    <img src="{{ url_for('static', filename='crowd_density_graph.png') }}" width="800">
+        <div class="card">
+            <h2>Live Metrics</h2>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                <div>Current: <span id="curr" class="stat-val">0</span></div>
+                <div>Max: <span id="max" class="stat-val">0</span></div>
+                <div>Avg: <span id="avg" class="stat-val">0</span></div>
+            </div>
 
+            <div class="secondary-stats">
+                <div>Total Frames: <span id="total_frames" style="color: white;">0</span></div>
+                <div>Peak at Frame: <span id="peak_frame" style="color: white;">0</span></div>
+            </div>
+
+            <div id="chart-container" style="margin-top: 20px;">
+                <canvas id="liveChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if (typeof Chart === 'undefined') {
+            document.getElementById('chart-container').innerHTML = "<p style='color:red'>Error: Chart.js failed to load.</p>";
+        }
+
+        const ctx = document.getElementById('liveChart').getContext('2d');
+        const liveChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [], 
+                datasets: [{
+                    label: 'Live Crowd Count',
+                    data: [],
+                    borderColor: '#00ff88',
+                    backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#444' } },
+                    x: { grid: { display: false } }
+                },
+                animation: false 
+            }
+        });
+
+        function updateData() {
+            fetch('/live_data')
+                .then(response => response.json())
+                .then(data => {
+                    
+                    document.getElementById('curr').innerText = data.count;
+                    document.getElementById('max').innerText = data.max_people;
+                    document.getElementById('avg').innerText = data.avg_people;
+
+                    document.getElementById('total_frames').innerText = data.frame;
+                    document.getElementById('peak_frame').innerText = data.peak_frame;
+
+                   
+                    const now = new Date().toLocaleTimeString();
+                    liveChart.data.labels.push(now);
+                    liveChart.data.datasets[0].data.push(data.count);
+
+                    if (liveChart.data.labels.length > 20) {
+                        liveChart.data.labels.shift();
+                        liveChart.data.datasets[0].data.shift();
+                    }
+                    liveChart.update();
+                })
+                .catch(err => console.error("Fetch Error:", err));
+        }
+
+        setInterval(updateData, 1000);
+    </script>
 </body>
 </html>
