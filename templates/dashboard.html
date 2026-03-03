@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crowd Monitoring Dashboard</title>
+</head>
+<body>
+    <h1>Crowd Analysis Dashboard</h1>
+
+    <h2>Maximum Crowd: {{ max_people }}</h2>
+    <h2>Average Crowd: {{ avg_people }}</h2>
+    <h2>Minimum Crowd: {{ min_people }}</h2>
+    <h2>Total Frames: {{ total_frames }}</h2>
+    <h2>Peak Frame: {{ peak_frame }}</h2>
+
+    <h2>Crowd Density Graph</h2>
+    <img src="{{ url_for('static', filename='crowd_density_graph.png') }}" width="800">
+
+</body>
+</html>
