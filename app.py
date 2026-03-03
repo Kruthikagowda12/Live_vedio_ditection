@@ -18,7 +18,6 @@ state = {
 
 def generate_frames():
     global state
- 
     cap = cv2.VideoCapture("video/MumbaiMetro_DemoCCTVClip_1.mp4")
     frame_id = 0
     
@@ -27,15 +26,16 @@ def generate_frames():
         if not success: 
             break
         
-       
         results = model(frame)
-        count = len(results[0].boxes)
+        
+    
+        annotated_frame = results[0].plot() 
        
+        count = len(results[0].boxes)
         frame_id += 1
         state["count"] = count
-        state["frame"] = frame_id  
+        state["frame"] = frame_id
         
-       
         if count > state["max_people"]:
             state["max_people"] = count
             state["peak_frame"] = frame_id 
@@ -43,10 +43,9 @@ def generate_frames():
         state["total_count_sum"] += count
         state["avg_people"] = round(state["total_count_sum"] / frame_id, 2)
         
-     
-        ret, buffer = cv2.imencode('.jpg', frame)
+       
+        ret, buffer = cv2.imencode('.jpg', annotated_frame) 
         yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-
 @app.route('/video_feed')
 def video_feed():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
